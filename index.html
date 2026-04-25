@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Alumnos Pro</title>
+    <title>Instituto Pro - Gestión</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
@@ -11,34 +11,117 @@
     <div class="container">
         <header>
             <div class="logo">
-                <i class="ri-user-star-fill"></i>
-                <h1>ALUMNOS<span>PRO</span></h1>
+                <i class="ri-graduation-cap-fill"></i>
+                <h1>INSTITUTO<span>PRO</span></h1>
             </div>
-            <div class="status" id="dbStatus">
-                <span class="indicator"></span>
-                <p>Base de Datos Local</p>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('cursos')"><i class="ri-calendar-todo-line"></i> Cursos y Local</button>
+                <button class="tab-btn" onclick="switchTab('alumnos')"><i class="ri-group-line"></i> Alumnos y Cuotas</button>
             </div>
         </header>
 
-        <main>
+        <!-- PESTAÑA: CURSOS Y LOCAL -->
+        <main id="tab-cursos" class="tab-content active">
             <section class="form-section">
                 <div class="card">
-                    <h2><i class="ri-user-add-line"></i> Registrar Alumno</h2>
-                    <form id="alumnoForm">
+                    <h2><i class="ri-book-read-line"></i> Abrir Nuevo Curso</h2>
+                    <form id="cursoForm">
                         <div class="input-group">
-                            <label for="nombre">Nombre Completo</label>
-                            <input type="text" id="nombre" required placeholder="Ej. Juan Pérez">
+                            <label>Nombre del Curso</label>
+                            <input type="text" id="c_nombre" required placeholder="Ej. Reparación de Celulares">
                         </div>
                         <div class="input-group">
-                            <label for="dni">DNI / ID</label>
-                            <input type="text" id="dni" required placeholder="Ej. 12345678">
+                            <label>Profesor a Cargo</label>
+                            <input type="text" id="c_profesor" required placeholder="Ej. Carlos Martínez">
+                        </div>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>Modalidad</label>
+                                <select id="c_modalidad">
+                                    <option value="Presencial">Presencial (Ocupa Local)</option>
+                                    <option value="Virtual">Virtual</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Tipo de Curso</label>
+                                <select id="c_tipo">
+                                    <option value="Regular">Regular</option>
+                                    <option value="Personalizado 2 meses">Personalizado (2 meses)</option>
+                                    <option value="Intensivo">Intensivo</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="input-group">
-                            <label for="curso">Curso / Grado</label>
-                            <input type="text" id="curso" required placeholder="Ej. 5to Año">
+                            <label>Días de Cursado</label>
+                            <div class="dias-checkboxes">
+                                <label><input type="checkbox" value="Lun" class="c_dias"> Lun</label>
+                                <label><input type="checkbox" value="Mar" class="c_dias"> Mar</label>
+                                <label><input type="checkbox" value="Mie" class="c_dias"> Mie</label>
+                                <label><input type="checkbox" value="Jue" class="c_dias"> Jue</label>
+                                <label><input type="checkbox" value="Vie" class="c_dias"> Vie</label>
+                                <label><input type="checkbox" value="Sab" class="c_dias"> Sab</label>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>Hora Inicio</label>
+                                <input type="time" id="c_horaInicio" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Hora Fin</label>
+                                <input type="time" id="c_horaFin" required>
+                            </div>
                         </div>
                         <button type="submit" class="btn-primary">
-                            <i class="ri-save-line"></i> Guardar Alumno
+                            <i class="ri-save-line"></i> Guardar Curso
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="ri-dashboard-line"></i> Organización por Profesor y Local</h2>
+                    </div>
+                    <div id="cursosContainer" class="cursos-grid">
+                        <!-- Cursos inyectados por JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- PESTAÑA: ALUMNOS Y CUOTAS -->
+        <main id="tab-alumnos" class="tab-content">
+            <section class="form-section">
+                <div class="card">
+                    <h2><i class="ri-user-add-line"></i> Inscribir Alumno</h2>
+                    <form id="alumnoForm">
+                        <div class="input-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="a_nombre" required placeholder="Ej. Juan Pérez">
+                        </div>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>DNI</label>
+                                <input type="number" id="a_dni" required placeholder="Sin puntos">
+                            </div>
+                            <div class="input-group">
+                                <label>Estado de Cuota</label>
+                                <select id="a_cuota">
+                                    <option value="aldia">Al Día</option>
+                                    <option value="debe">Debe Cuota</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Seleccionar Curso / Profesor</label>
+                            <select id="a_claseId" required>
+                                <!-- Opciones cargadas por JS -->
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="ri-save-line"></i> Inscribir Alumno
                         </button>
                     </form>
                 </div>
@@ -48,18 +131,20 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="ri-team-line"></i> Listado de Alumnos</h2>
-                        <div class="search-box">
-                            <i class="ri-search-line"></i>
-                            <input type="text" id="search" placeholder="Buscar alumno...">
+                        <div class="filtros">
+                            <button class="btn-filter" onclick="renderAlumnos('todos')">Todos</button>
+                            <button class="btn-filter error" onclick="renderAlumnos('deudores')">Deudores</button>
                         </div>
                     </div>
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Curso</th>
+                                    <th>DNI</th>
+                                    <th>Alumno</th>
+                                    <th>Curso y Profe</th>
+                                    <th>Asistencias</th>
+                                    <th>Cuota</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
