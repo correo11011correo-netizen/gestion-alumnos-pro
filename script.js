@@ -1,9 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ESTADO LOCAL (DB)
     let clases = JSON.parse(localStorage.getItem('insti_clases')) || [];
     let alumnos = JSON.parse(localStorage.getItem('insti_alumnos')) || [];
 
-    // TABS LOGIC
+    const cursoForm = document.getElementById('cursoForm');
+    const selectHora = document.getElementById('c_horaInicio');
+    const statusMsg = document.getElementById('availability-badge');
+
+    // --- GENERAR SELECTOR DE HORAS (08:00 a 21:00 cada 30 min) ---
+    const generateHours = () => {
+        selectHora.innerHTML = '<option value="">-- Selecciona Hora --</option>';
+        for (let h = 8; h <= 21; h++) {
+            for (let m of ['00', '30']) {
+                if (h === 21 && m === '30') continue;
+                const time = `${h.toString().padStart(2, '0')}:${m}`;
+                selectHora.innerHTML += `<option value="${time}">${time}</option>`;
+            }
+        }
+    };
+    generateHours();
+
     window.switchTab = (tabName) => {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -12,73 +27,89 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabName === 'alumnos') updateClasesSelect();
     };
 
-    // --- LÓGICA DE CURSOS / LOCAL ---
-    const cursoForm = document.getElementById('cursoForm');
-    const cursosContainer = document.getElementById('cursosContainer');
+    // --- LOGICA DE CRUCE Y DISPONIBILIDAD ---
+    const checkCruces = () => {
+        const hInicio = selectHora.value;
+        const duracion = parseFloat(document.getElementById('c_duracion').value);
+        const dias = Array.from(document.querySelectorAll('.c_dias:checked')).map(cb => cb.value);
+        const modalidad = document.getElementById('c_modalidad').value;
 
-    const isLocalOccupied = (diasSeleccionados, inicio, fin) => {
-        // Simple validación de cruce de horarios para cursos presenciales
-        const numInicio = parseInt(inicio.replace(':',''));
-        const numFin = parseInt(fin.replace(':',''));
-        
+        if (!hInicio || dias.length === 0 || modalidad === 'Virtual') {
+            statusMsg.innerText = "Selecciona horario para verificar...";
+            statusMsg.className = "status-msg";
+            return true;
+        }
+
+        const [h, m] = hInicio.split(':').map(Number);
+        const totalMinInicio = h * 60 + m;
+        const totalMinFin = totalMinInicio + (duracion * 60);
+
         for (let clase of clases) {
             if (clase.modalidad === 'Virtual') continue;
             
-            // Check si comparten días
-            const compartenDia = diasSeleccionados.some(d => clase.dias.includes(d));
+            const compartenDia = dias.some(d => clase.dias.includes(d));
             if (compartenDia) {
-                const numCInicio = parseInt(clase.horaInicio.replace(':',''));
-                const numCFin = parseInt(clase.horaFin.replace(':',''));
-                
-                // Lógica de superposición de tiempos
-                if ((numInicio >= numCInicio && numInicio < numCFin) || 
-                    (numFin > numCInicio && numFin <= numCFin) ||
-                    (numInicio <= numCInicio && numFin >= numCFin)) {
-                    return `El local ya está ocupado por "${clase.nombre}" (${clase.profesor}) esos días de ${clase.horaInicio} a ${clase.horaFin}`;
+                const [chI, cmI] = clase.horaInicio.split(':').map(Number);
+                const [chF, cmF] = clase.horaFin.split(':').map(Number);
+                const cMinI = chI * 60 + cmI;
+                const cMinF = chF * 60 + cmF;
+
+                if ((totalMinInicio >= cMinI && totalMinInicio < cMinF) || 
+                    (totalMinFin > cMinI && totalMinFin <= cMinF) ||
+                    (totalMinInicio <= cMinI && totalMinFin >= cMinF)) {
+                    statusMsg.innerText = `❌ OCUPADO por ${clase.nombre}`;
+                    statusMsg.className = "status-msg error";
+                    return false;
                 }
             }
         }
-        return false;
+        statusMsg.innerText = `✅ DISPONIBLE (Termina ${Math.floor(totalMinFin/60)}:${(totalMinFin%60).toString().padStart(2,'0')})`;
+        statusMsg.className = "status-msg success";
+        return true;
     };
+
+    // Escuchar cambios para validar en tiempo real
+    [selectHora, document.getElementById('c_duracion'), document.getElementById('c_modalidad')].forEach(el => {
+        el.addEventListener('change', checkCruces);
+    });
+    document.querySelectorAll('.c_dias').forEach(el => el.addEventListener('change', checkCruces));
 
     cursoForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const diasElegidos = Array.from(document.querySelectorAll('.c_dias:checked')).map(cb => cb.value);
-        if (diasElegidos.length === 0) return alert('Debes seleccionar al menos un día.');
+        if (!checkCruces()) return alert('El local está ocupado en ese horario.');
 
-        const modalidad = document.getElementById('c_modalidad').value;
-        const hInicio = document.getElementById('c_horaInicio').value;
-        const hFin = document.getElementById('c_horaFin').value;
-
-        if (modalidad === 'Presencial') {
-            const ocupadoMsg = isLocalOccupied(diasElegidos, hInicio, hFin);
-            if (ocupadoMsg) return alert(`🚨 ERROR DE LOCAL:\n${ocupadoMsg}`);
-        }
+        const hInicio = selectHora.value;
+        const duracion = parseFloat(document.getElementById('c_duracion').value);
+        const [h, m] = hInicio.split(':').map(Number);
+        const totalMinFin = (h * 60 + m) + (duracion * 60);
+        const horaFin = `${Math.floor(totalMinFin/60).toString().padStart(2,'0')}:${(totalMinFin%60).toString().padStart(2,'0')}`;
 
         const nuevaClase = {
             id: 'C-' + Date.now(),
             nombre: document.getElementById('c_nombre').value,
             profesor: document.getElementById('c_profesor').value,
-            modalidad: modalidad,
-            tipo: document.getElementById('c_tipo').value,
-            dias: diasElegidos,
+            modalidad: document.getElementById('c_modalidad').value,
+            tipo: 'Personalizado', // Simplificado
+            dias: Array.from(document.querySelectorAll('.c_dias:checked')).map(cb => cb.value),
             horaInicio: hInicio,
-            horaFin: hFin
+            horaFin: horaFin,
+            duracion: duracion
         };
 
         clases.push(nuevaClase);
         saveDB();
         cursoForm.reset();
+        checkCruces();
     });
 
     const renderCursos = () => {
-        cursosContainer.innerHTML = '';
+        const container = document.getElementById('cursosContainer');
+        container.innerHTML = '';
         if (clases.length === 0) {
-            cursosContainer.innerHTML = '<p style="color:#64748b;">No hay cursos configurados. El local está libre.</p>';
+            container.innerHTML = '<p class="empty-msg">No hay cursos programados.</p>';
             return;
         }
 
-        // Agrupar por profesor
         const profes = {};
         clases.forEach(c => {
             if (!profes[c.profesor]) profes[c.profesor] = [];
@@ -89,125 +120,78 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'profe-card';
             let html = `<div class="profe-header"><i class="ri-user-star-line"></i> Prof. ${prof}</div>`;
-            
             profes[prof].forEach(c => {
-                const modClass = c.modalidad === 'Virtual' ? 'virtual' : '';
                 html += `
-                    <div class="curso-item ${modClass}">
-                        <div class="curso-title">
-                            <span>${c.nombre} (${c.tipo})</span>
-                            <span class="badge ${c.modalidad.toLowerCase()}">${c.modalidad}</span>
-                        </div>
-                        <div class="curso-details">
-                            <i class="ri-calendar-event-line"></i> ${c.dias.join(', ')} | <i class="ri-time-line"></i> ${c.horaInicio} a ${c.horaFin}
-                            <button class="btn-icon delete" style="float:right; font-size:1rem;" onclick="deleteClase('${c.id}')"><i class="ri-delete-bin-line"></i></button>
+                    <div class="curso-item ${c.modalidad === 'Virtual' ? 'virtual' : ''}">
+                        <div class="curso-main">${c.nombre}</div>
+                        <div class="curso-sub">
+                            <span><i class="ri-calendar-line"></i> ${c.dias.join(',')} | ${c.horaInicio} - ${c.horaFin}</span>
+                            <button class="btn-delete-mobile" onclick="deleteClase('${c.id}')"><i class="ri-delete-bin-line"></i></button>
                         </div>
                     </div>
                 `;
             });
             card.innerHTML = html;
-            cursosContainer.appendChild(card);
+            container.appendChild(card);
         }
     };
 
     window.deleteClase = (id) => {
-        if(confirm('¿Eliminar curso? Se borrarán las inscripciones asociadas a este horario.')){
+        if(confirm('¿Eliminar curso?')){
             clases = clases.filter(c => c.id !== id);
             alumnos = alumnos.filter(a => a.claseId !== id);
             saveDB();
         }
     };
 
-    // --- LÓGICA DE ALUMNOS ---
-    const alumnoForm = document.getElementById('alumnoForm');
-    const selectClase = document.getElementById('a_claseId');
-    const alumnosTable = document.getElementById('alumnosTable');
-
+    // --- ALUMNOS ---
     const updateClasesSelect = () => {
-        selectClase.innerHTML = '<option value="">-- Elige un Curso Activo --</option>';
+        const s = document.getElementById('a_claseId');
+        s.innerHTML = '<option value="">-- Elige Curso --</option>';
         clases.forEach(c => {
-            selectClase.innerHTML += `<option value="${c.id}">${c.nombre} con Prof. ${c.profesor} (${c.modalidad})</option>`;
+            s.innerHTML += `<option value="${c.id}">${c.nombre} (${c.horaInicio} con ${c.profesor})</option>`;
         });
     };
 
-    alumnoForm.addEventListener('submit', (e) => {
+    document.getElementById('alumnoForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        const dni = document.getElementById('a_dni').value;
-        const claseId = document.getElementById('a_claseId').value;
-        
-        if(!claseId) return alert('Debes seleccionar un curso.');
-
-        if (alumnos.some(a => a.dni === dni && a.claseId === claseId)) {
-            return alert('El alumno ya está inscripto en esta clase exacta.');
-        }
-
-        const nuevoAlumno = {
+        alumnos.push({
             id: 'A-' + Date.now(),
             nombre: document.getElementById('a_nombre').value,
-            dni: dni,
+            dni: document.getElementById('a_dni').value,
             cuotaEstado: document.getElementById('a_cuota').value,
-            claseId: claseId,
+            claseId: document.getElementById('a_claseId').value,
             asistencias: 0
-        };
-
-        alumnos.push(nuevoAlumno);
+        });
         saveDB();
-        alumnoForm.reset();
+        e.target.reset();
     });
 
     window.renderAlumnos = (filtro = 'todos') => {
-        alumnosTable.innerHTML = '';
-        let filtrados = alumnos;
-        if (filtro === 'deudores') filtrados = alumnos.filter(a => a.cuotaEstado === 'debe');
-
-        if(filtrados.length === 0){
-            alumnosTable.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b;">No hay registros</td></tr>';
-            return;
-        }
-
-        filtrados.forEach(a => {
-            const claseInfo = clases.find(c => c.id === a.claseId) || {nombre: 'Clase Eliminada', profesor: 'N/A', modalidad: ''};
+        const table = document.getElementById('alumnosTable');
+        table.innerHTML = '';
+        let list = filtro === 'deudores' ? alumnos.filter(a => a.cuotaEstado === 'debe') : alumnos;
+        
+        list.forEach(a => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${a.dni}</td>
-                <td><strong>${a.nombre}</strong></td>
-                <td>${claseInfo.nombre}<br><small style="color:#94a3b8">Prof. ${claseInfo.profesor}</small></td>
+                <td><strong>${a.nombre}</strong><br><small>${a.dni}</small></td>
                 <td>
-                    <button class="btn-icon add" onclick="addAsistencia('${a.id}')"><i class="ri-add-circle-line"></i></button> 
-                    <strong>${a.asistencias}</strong> clases
+                    <div class="asistencia-box">
+                        <button class="btn-plus" onclick="addAsis('${a.id}')">+</button>
+                        <span>${a.asistencias}</span>
+                    </div>
                 </td>
-                <td>
-                    <span class="badge ${a.cuotaEstado}" onclick="toggleCuota('${a.id}')" style="cursor:pointer">
-                        ${a.cuotaEstado === 'aldia' ? 'Al Día' : 'DEBE CUOTA'}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn-icon delete" onclick="deleteAlumno('${a.id}')"><i class="ri-delete-bin-line"></i></button>
-                </td>
+                <td><span class="badge-mobile ${a.cuotaEstado}" onclick="toggleCuota('${a.id}')">${a.cuotaEstado.toUpperCase()}</span></td>
+                <td><button class="btn-delete-mobile" onclick="delAlu('${a.id}')"><i class="ri-delete-bin-line"></i></button></td>
             `;
-            alumnosTable.appendChild(tr);
+            table.appendChild(tr);
         });
     };
 
-    window.addAsistencia = (id) => {
-        const a = alumnos.find(x => x.id === id);
-        if(a) { a.asistencias++; saveDB(); }
-    };
-
-    window.toggleCuota = (id) => {
-        const a = alumnos.find(x => x.id === id);
-        if(a) { 
-            a.cuotaEstado = a.cuotaEstado === 'aldia' ? 'debe' : 'aldia'; 
-            saveDB(); 
-        }
-    };
-
-    window.deleteAlumno = (id) => {
-        if(confirm('¿Dar de baja a este alumno?')){
-            alumnos = alumnos.filter(a => a.id !== id);
-            saveDB();
-        }
-    };
+    window.addAsis = (id) => { const x = alumnos.find(i=>i.id===id); if(x){x.asistencias++; saveDB();} };
+    window.toggleCuota = (id) => { const x = alumnos.find(i=>i.id===id); if(x){x.cuotaEstado = x.cuotaEstado==='aldia'?'debe':'aldia'; saveDB();} };
+    window.delAlu = (id) => { if(confirm('¿Borrar?')){alumnos=alumnos.filter(i=>i.id!==id); saveDB();} };
 
     const saveDB = () => {
         localStorage.setItem('insti_clases', JSON.stringify(clases));
@@ -216,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAlumnos();
     };
 
-    // INIT
     renderCursos();
     renderAlumnos();
 });
