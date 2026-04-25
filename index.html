@@ -3,20 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
-    <title>Instituto Pro Mobile</title>
-    
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
+    <title>Instituto Pro - Smart Calendar</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
     <script>
         document.write('<link rel="stylesheet" href="styles.css?v=' + new Date().getTime() + '">');
     </script>
@@ -25,54 +14,59 @@
     <div class="app-wrapper">
         <header class="main-header">
             <div class="logo">
-                <i class="ri-graduation-cap-fill"></i>
+                <i class="ri-calendar-check-fill"></i>
                 <h1>INSTITUTO<span>PRO</span></h1>
             </div>
             <div class="tab-nav">
                 <button class="tab-btn active" onclick="switchTab('cursos')">
-                    <i class="ri-calendar-todo-line"></i>
-                    <span>Cursos</span>
+                    <i class="ri-time-line"></i>
+                    <span>Calendario</span>
                 </button>
                 <button class="tab-btn" onclick="switchTab('alumnos')">
-                    <i class="ri-group-line"></i>
-                    <span>Alumnos</span>
+                    <i class="ri-user-follow-line"></i>
+                    <span>Inscripción</span>
                 </button>
             </div>
         </header>
 
         <div class="content-area">
-            <!-- PESTAÑA: CURSOS Y LOCAL -->
             <main id="tab-cursos" class="tab-content active">
                 <section class="mobile-card-form">
                     <div class="card">
-                        <h2><i class="ri-book-read-line"></i> Abrir Nuevo Curso</h2>
+                        <h2><i class="ri-add-box-line"></i> Programar Nuevo Curso</h2>
                         <form id="cursoForm">
                             <div class="input-group">
                                 <label>Nombre del Curso</label>
-                                <input type="text" id="c_nombre" required placeholder="Ej. Reparación de Celulares">
+                                <input type="text" id="c_nombre" required placeholder="Ej. Barbería Profesional">
                             </div>
                             <div class="input-group">
-                                <label>Profesor a Cargo</label>
-                                <input type="text" id="c_profesor" required placeholder="Ej. Carlos Martínez">
+                                <label>Profesor</label>
+                                <input type="text" id="c_profesor" required placeholder="Nombre del docente">
                             </div>
+                            
                             <div class="input-row">
                                 <div class="input-group">
                                     <label>Modalidad</label>
                                     <select id="c_modalidad">
-                                        <option value="Presencial">Presencial</option>
-                                        <option value="Virtual">Virtual</option>
+                                        <option value="Presencial">Presencial (Ocupa Local)</option>
+                                        <option value="Virtual">Virtual (Sin cruce)</option>
                                     </select>
                                 </div>
                                 <div class="input-group">
-                                    <label>Tipo</label>
-                                    <select id="c_tipo">
-                                        <option value="Regular">Regular</option>
-                                        <option value="Personalizado 2 meses">Personalizado</option>
+                                    <label>Duración</label>
+                                    <select id="c_duracion">
+                                        <option value="1">1 Hora</option>
+                                        <option value="1.5">1.5 Horas</option>
+                                        <option value="2">2 Horas</option>
+                                        <option value="2.5">2.5 Horas</option>
+                                        <option value="3">3 Horas</option>
+                                        <option value="4">4 Horas</option>
                                     </select>
                                 </div>
                             </div>
+
                             <div class="input-group">
-                                <label>Días de Cursado</label>
+                                <label>Días Disponibles</label>
                                 <div class="dias-selector">
                                     <label><input type="checkbox" value="Lun" class="c_dias"><span>L</span></label>
                                     <label><input type="checkbox" value="Mar" class="c_dias"><span>M</span></label>
@@ -82,33 +76,33 @@
                                     <label><input type="checkbox" value="Sab" class="c_dias"><span>S</span></label>
                                 </div>
                             </div>
-                            <div class="input-row">
-                                <div class="input-group">
-                                    <label>Inicio</label>
-                                    <input type="time" id="c_horaInicio" required>
-                                </div>
-                                <div class="input-group">
-                                    <label>Fin</label>
-                                    <input type="time" id="c_horaFin" required>
-                                </div>
+
+                            <div class="input-group">
+                                <label>Hora de Inicio (08:00 - 21:00)</label>
+                                <select id="c_horaInicio" required>
+                                    <!-- Generado por JS: de 30 en 30 mins -->
+                                </select>
                             </div>
+
+                            <div id="availability-badge" class="status-msg">
+                                Selecciona horario para verificar disponibilidad...
+                            </div>
+
                             <button type="submit" class="btn-primary main-btn">
-                                <i class="ri-save-line"></i> Guardar Curso
+                                <i class="ri-calendar-event-line"></i> Confirmar y Reservar
                             </button>
                         </form>
                     </div>
                 </section>
 
                 <section class="mobile-list">
-                    <h2 class="section-subtitle">Profesores y Horarios</h2>
-                    <div id="cursosContainer" class="cursos-stack">
-                        <!-- Cursos inyectados -->
-                    </div>
+                    <h2 class="section-subtitle">Horarios Ocupados</h2>
+                    <div id="cursosContainer" class="cursos-stack"></div>
                 </section>
             </main>
 
-            <!-- PESTAÑA: ALUMNOS Y CUOTAS -->
             <main id="tab-alumnos" class="tab-content">
+                <!-- Mantengo la estructura de alumnos previa -->
                 <section class="mobile-card-form">
                     <div class="card">
                         <h2><i class="ri-user-add-line"></i> Inscribir Alumno</h2>
@@ -131,11 +125,11 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label>Curso / Profesor</label>
+                                <label>Curso / Horario</label>
                                 <select id="a_claseId" required></select>
                             </div>
                             <button type="submit" class="btn-primary main-btn">
-                                <i class="ri-save-line"></i> Inscribir
+                                <i class="ri-user-star-line"></i> Finalizar Inscripción
                             </button>
                         </form>
                     </div>
@@ -143,7 +137,7 @@
 
                 <section class="mobile-list">
                     <div class="list-header-mobile">
-                        <h2>Alumnos</h2>
+                        <h2>Listado de Alumnos</h2>
                         <div class="mobile-filters">
                             <button class="chip-filter" onclick="renderAlumnos('todos')">Todos</button>
                             <button class="chip-filter deudores" onclick="renderAlumnos('deudores')">Deudores</button>
@@ -155,7 +149,7 @@
                                 <tr>
                                     <th>Alumno</th>
                                     <th>Asist.</th>
-                                    <th>Estado</th>
+                                    <th>Cuota</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -166,7 +160,6 @@
             </main>
         </div>
     </div>
-
     <script>
         document.write('<script src="script.js?v=' + new Date().getTime() + '"><\/script>');
     </script>
