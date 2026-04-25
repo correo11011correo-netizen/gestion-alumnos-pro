@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Alumnos Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="ri-user-star-fill"></i>
+                <h1>ALUMNOS<span>PRO</span></h1>
+            </div>
+            <div class="status" id="dbStatus">
+                <span class="indicator"></span>
+                <p>Base de Datos Local</p>
+            </div>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <div class="card">
+                    <h2><i class="ri-user-add-line"></i> Registrar Alumno</h2>
+                    <form id="alumnoForm">
+                        <div class="input-group">
+                            <label for="nombre">Nombre Completo</label>
+                            <input type="text" id="nombre" required placeholder="Ej. Juan Pérez">
+                        </div>
+                        <div class="input-group">
+                            <label for="dni">DNI / ID</label>
+                            <input type="text" id="dni" required placeholder="Ej. 12345678">
+                        </div>
+                        <div class="input-group">
+                            <label for="curso">Curso / Grado</label>
+                            <input type="text" id="curso" required placeholder="Ej. 5to Año">
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="ri-save-line"></i> Guardar Alumno
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="list-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="ri-team-line"></i> Listado de Alumnos</h2>
+                        <div class="search-box">
+                            <i class="ri-search-line"></i>
+                            <input type="text" id="search" placeholder="Buscar alumno...">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Curso</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alumnosTable">
+                                <!-- Datos cargados por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
