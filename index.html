@@ -2,168 +2,171 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instituto Pro - Gestión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Instituto Pro Mobile</title>
+    
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Sistema Anti-Cache: Carga dinámica del CSS -->
+    
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
     <script>
         document.write('<link rel="stylesheet" href="styles.css?v=' + new Date().getTime() + '">');
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
+    <div class="app-wrapper">
+        <header class="main-header">
             <div class="logo">
                 <i class="ri-graduation-cap-fill"></i>
                 <h1>INSTITUTO<span>PRO</span></h1>
             </div>
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('cursos')"><i class="ri-calendar-todo-line"></i> Cursos y Local</button>
-                <button class="tab-btn" onclick="switchTab('alumnos')"><i class="ri-group-line"></i> Alumnos y Cuotas</button>
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab('cursos')">
+                    <i class="ri-calendar-todo-line"></i>
+                    <span>Cursos</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('alumnos')">
+                    <i class="ri-group-line"></i>
+                    <span>Alumnos</span>
+                </button>
             </div>
         </header>
 
-        <!-- PESTAÑA: CURSOS Y LOCAL -->
-        <main id="tab-cursos" class="tab-content active">
-            <section class="form-section">
-                <div class="card">
-                    <h2><i class="ri-book-read-line"></i> Abrir Nuevo Curso</h2>
-                    <form id="cursoForm">
-                        <div class="input-group">
-                            <label>Nombre del Curso</label>
-                            <input type="text" id="c_nombre" required placeholder="Ej. Reparación de Celulares">
-                        </div>
-                        <div class="input-group">
-                            <label>Profesor a Cargo</label>
-                            <input type="text" id="c_profesor" required placeholder="Ej. Carlos Martínez">
-                        </div>
-                        <div class="grid-2">
+        <div class="content-area">
+            <!-- PESTAÑA: CURSOS Y LOCAL -->
+            <main id="tab-cursos" class="tab-content active">
+                <section class="mobile-card-form">
+                    <div class="card">
+                        <h2><i class="ri-book-read-line"></i> Abrir Nuevo Curso</h2>
+                        <form id="cursoForm">
                             <div class="input-group">
-                                <label>Modalidad</label>
-                                <select id="c_modalidad">
-                                    <option value="Presencial">Presencial (Ocupa Local)</option>
-                                    <option value="Virtual">Virtual</option>
-                                </select>
+                                <label>Nombre del Curso</label>
+                                <input type="text" id="c_nombre" required placeholder="Ej. Reparación de Celulares">
                             </div>
                             <div class="input-group">
-                                <label>Tipo de Curso</label>
-                                <select id="c_tipo">
-                                    <option value="Regular">Regular</option>
-                                    <option value="Personalizado 2 meses">Personalizado (2 meses)</option>
-                                    <option value="Intensivo">Intensivo</option>
-                                </select>
+                                <label>Profesor a Cargo</label>
+                                <input type="text" id="c_profesor" required placeholder="Ej. Carlos Martínez">
                             </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Días de Cursado</label>
-                            <div class="dias-checkboxes">
-                                <label><input type="checkbox" value="Lun" class="c_dias"> Lun</label>
-                                <label><input type="checkbox" value="Mar" class="c_dias"> Mar</label>
-                                <label><input type="checkbox" value="Mie" class="c_dias"> Mie</label>
-                                <label><input type="checkbox" value="Jue" class="c_dias"> Jue</label>
-                                <label><input type="checkbox" value="Vie" class="c_dias"> Vie</label>
-                                <label><input type="checkbox" value="Sab" class="c_dias"> Sab</label>
-                            </div>
-                        </div>
-                        <div class="grid-2">
-                            <div class="input-group">
-                                <label>Hora Inicio</label>
-                                <input type="time" id="c_horaInicio" required>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label>Modalidad</label>
+                                    <select id="c_modalidad">
+                                        <option value="Presencial">Presencial</option>
+                                        <option value="Virtual">Virtual</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Tipo</label>
+                                    <select id="c_tipo">
+                                        <option value="Regular">Regular</option>
+                                        <option value="Personalizado 2 meses">Personalizado</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="input-group">
-                                <label>Hora Fin</label>
-                                <input type="time" id="c_horaFin" required>
+                                <label>Días de Cursado</label>
+                                <div class="dias-selector">
+                                    <label><input type="checkbox" value="Lun" class="c_dias"><span>L</span></label>
+                                    <label><input type="checkbox" value="Mar" class="c_dias"><span>M</span></label>
+                                    <label><input type="checkbox" value="Mie" class="c_dias"><span>X</span></label>
+                                    <label><input type="checkbox" value="Jue" class="c_dias"><span>J</span></label>
+                                    <label><input type="checkbox" value="Vie" class="c_dias"><span>V</span></label>
+                                    <label><input type="checkbox" value="Sab" class="c_dias"><span>S</span></label>
+                                </div>
                             </div>
-                        </div>
-                        <button type="submit" class="btn-primary">
-                            <i class="ri-save-line"></i> Guardar Curso
-                        </button>
-                    </form>
-                </div>
-            </section>
-
-            <section class="list-section">
-                <div class="card">
-                    <div class="card-header">
-                        <h2><i class="ri-dashboard-line"></i> Organización por Profesor y Local</h2>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label>Inicio</label>
+                                    <input type="time" id="c_horaInicio" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>Fin</label>
+                                    <input type="time" id="c_horaFin" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary main-btn">
+                                <i class="ri-save-line"></i> Guardar Curso
+                            </button>
+                        </form>
                     </div>
-                    <div id="cursosContainer" class="cursos-grid">
-                        <!-- Cursos inyectados por JS -->
+                </section>
+
+                <section class="mobile-list">
+                    <h2 class="section-subtitle">Profesores y Horarios</h2>
+                    <div id="cursosContainer" class="cursos-stack">
+                        <!-- Cursos inyectados -->
                     </div>
-                </div>
-            </section>
-        </main>
+                </section>
+            </main>
 
-        <!-- PESTAÑA: ALUMNOS Y CUOTAS -->
-        <main id="tab-alumnos" class="tab-content">
-            <section class="form-section">
-                <div class="card">
-                    <h2><i class="ri-user-add-line"></i> Inscribir Alumno</h2>
-                    <form id="alumnoForm">
-                        <div class="input-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="a_nombre" required placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="grid-2">
+            <!-- PESTAÑA: ALUMNOS Y CUOTAS -->
+            <main id="tab-alumnos" class="tab-content">
+                <section class="mobile-card-form">
+                    <div class="card">
+                        <h2><i class="ri-user-add-line"></i> Inscribir Alumno</h2>
+                        <form id="alumnoForm">
                             <div class="input-group">
-                                <label>DNI</label>
-                                <input type="number" id="a_dni" required placeholder="Sin puntos">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="a_nombre" required>
+                            </div>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label>DNI</label>
+                                    <input type="number" id="a_dni" required inputmode="numeric">
+                                </div>
+                                <div class="input-group">
+                                    <label>Cuota</label>
+                                    <select id="a_cuota">
+                                        <option value="aldia">Al Día</option>
+                                        <option value="debe">Debe</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="input-group">
-                                <label>Estado de Cuota</label>
-                                <select id="a_cuota">
-                                    <option value="aldia">Al Día</option>
-                                    <option value="debe">Debe Cuota</option>
-                                </select>
+                                <label>Curso / Profesor</label>
+                                <select id="a_claseId" required></select>
                             </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Seleccionar Curso / Profesor</label>
-                            <select id="a_claseId" required>
-                                <!-- Opciones cargadas por JS -->
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-primary">
-                            <i class="ri-save-line"></i> Inscribir Alumno
-                        </button>
-                    </form>
-                </div>
-            </section>
+                            <button type="submit" class="btn-primary main-btn">
+                                <i class="ri-save-line"></i> Inscribir
+                            </button>
+                        </form>
+                    </div>
+                </section>
 
-            <section class="list-section">
-                <div class="card">
-                    <div class="card-header">
-                        <h2><i class="ri-team-line"></i> Listado de Alumnos</h2>
-                        <div class="filtros">
-                            <button class="btn-filter" onclick="renderAlumnos('todos')">Todos</button>
-                            <button class="btn-filter error" onclick="renderAlumnos('deudores')">Deudores</button>
+                <section class="mobile-list">
+                    <div class="list-header-mobile">
+                        <h2>Alumnos</h2>
+                        <div class="mobile-filters">
+                            <button class="chip-filter" onclick="renderAlumnos('todos')">Todos</button>
+                            <button class="chip-filter deudores" onclick="renderAlumnos('deudores')">Deudores</button>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table>
+                    <div class="table-scroll-wrapper">
+                        <table class="mobile-table">
                             <thead>
                                 <tr>
-                                    <th>DNI</th>
                                     <th>Alumno</th>
-                                    <th>Curso y Profe</th>
-                                    <th>Asistencias</th>
-                                    <th>Cuota</th>
-                                    <th>Acciones</th>
+                                    <th>Asist.</th>
+                                    <th>Estado</th>
+                                    <th></th>
                                 </tr>
                             </thead>
-                            <tbody id="alumnosTable">
-                                <!-- Datos cargados por JS -->
-                            </tbody>
+                            <tbody id="alumnosTable"></tbody>
                         </table>
                     </div>
-                </div>
-            </section>
-        </main>
+                </section>
+            </main>
+        </div>
     </div>
-    <!-- Sistema Anti-Cache: Carga dinámica del JS -->
+
     <script>
         document.write('<script src="script.js?v=' + new Date().getTime() + '"><\/script>');
     </script>
