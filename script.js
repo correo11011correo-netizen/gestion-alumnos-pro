@@ -3,55 +3,84 @@ let userToken = null;
 let clases = [];
 let alumnos = [];
 
-console.log("Script.js cargado correctamente.");
+// Función para loguear visualmente en pantalla (para Android)
+function logVisual(msg, type = 'info') {
+    const debugLog = document.getElementById('debug-log');
+    if (debugLog) {
+        const entry = document.createElement('div');
+        entry.style.borderBottom = '1px solid #222';
+        entry.style.padding = '2px 0';
+        entry.style.color = type === 'error' ? '#ff0000' : (type === 'warn' ? '#ffff00' : '#00ff00');
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        debugLog.appendChild(entry);
+        debugLog.scrollTop = debugLog.scrollHeight;
+    }
+    console.log(msg);
+}
+
+logVisual("Script.js cargado correctamente.");
 
 // Exponer funciones al ámbito global para que Google Sign-In pueda verlas
 window.onSignIn = function(googleUser) {
-    console.log("Evento onSignIn disparado.");
+    logVisual("Evento onSignIn disparado.");
     try {
         const profile = googleUser.getBasicProfile();
-        console.log('Usuario autenticado:', profile.getName(), profile.getEmail());
+        logVisual(`Usuario autenticado: ${profile.getName()} (${profile.getEmail()})`);
 
         userToken = googleUser.getAuthResponse().id_token;
-        console.log("ID Token obtenido.");
+        logVisual("ID Token obtenido con éxito.");
 
-        // UI Updates - Asegurar que los elementos existen antes de manipularlos
-        const authContainer = document.querySelector('.g-signin2');
+        // UI Updates - FORZAR CAMBIOS
+        logVisual("Actualizando UI...");
+        const signinBtn = document.querySelector('.g-signin2');
         const signoutBtn = document.getElementById('signout-btn');
         const mainNav = document.getElementById('main-nav');
         const appContent = document.getElementById('app-content');
 
-        if (authContainer) authContainer.style.display = 'none';
-        if (signoutBtn) signoutBtn.style.display = 'block';
-        if (mainNav) mainNav.style.display = 'flex';
+        if (signinBtn) {
+            signinBtn.style.display = 'none';
+            logVisual("Botón Sign-In ocultado.");
+        }
+        if (signoutBtn) {
+            signoutBtn.style.display = 'block';
+            logVisual("Botón Sign-Out mostrado.");
+        }
+        if (mainNav) {
+            mainNav.style.display = 'flex';
+            logVisual("Navegación principal mostrada.");
+        }
         if (appContent) {
             appContent.style.display = 'flex';
-            appContent.classList.add('active'); // Por si hay CSS que dependa de esto
+            logVisual("Contenido de la aplicación desbloqueado.");
         }
 
-        console.log("Interfaz de usuario actualizada post-login.");
         initApp();
     } catch (error) {
-        console.error("Error en onSignIn:", error);
+        logVisual(`ERROR en onSignIn: ${error.message}`, 'error');
+        console.error(error);
     }
 };
 
 window.signOut = function() {
-    console.log("Cerrando sesión...");
-    var auth2 = gapi.auth2.getAuthInstance();
-    auth2.signOut().then(function () {
-        console.log('Sesión cerrada exitosamente.');
-        userToken = null;
-        
-        document.querySelector('.g-signin2').style.display = 'block';
-        document.getElementById('signout-btn').style.display = 'none';
-        document.getElementById('main-nav').style.display = 'none';
-        document.getElementById('app-content').style.display = 'none';
-    });
+    logVisual("Cerrando sesión...");
+    try {
+        var auth2 = gapi.auth2.getAuthInstance();
+        auth2.signOut().then(function () {
+            logVisual('Sesión cerrada exitosamente.');
+            userToken = null;
+            
+            document.querySelector('.g-signin2').style.display = 'block';
+            document.getElementById('signout-btn').style.display = 'none';
+            document.getElementById('main-nav').style.display = 'none';
+            document.getElementById('app-content').style.display = 'none';
+        });
+    } catch (error) {
+        logVisual(`ERROR en signOut: ${error.message}`, 'error');
+    }
 };
 
 async function callBackend(action, method = 'GET', data = null) {
-    console.log(`Llamando al backend: ${action} [${method}]`);
+    logVisual(`Llamada API: ${action} [${method}]`);
     const url = new URL(APPS_SCRIPT_URL);
     url.searchParams.append('action', action);
     
@@ -66,18 +95,19 @@ async function callBackend(action, method = 'GET', data = null) {
 
     try {
         const response = await fetch(url, options);
+        logVisual(`HTTP Status: ${response.status}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
-        console.log(`Respuesta del backend (${action}):`, result);
+        logVisual(`Respuesta API (${action}): ${result.status}`);
         return result;
     } catch (error) {
-        console.error(`Error en callBackend (${action}):`, error);
+        logVisual(`ERROR en callBackend (${action}): ${error.message}`, 'error');
         return { status: 'error', message: error.toString() };
     }
 }
 
 async function initApp() {
-    console.log("Inicializando aplicación y cargando datos...");
+    logVisual("Iniciando carga de datos remotos...");
     await refreshData();
 }
 
@@ -86,22 +116,28 @@ async function refreshData() {
         const resClases = await callBackend('getClases');
         if (resClases.status === 'success') {
             clases = resClases.data || [];
+            logVisual(`Cursos cargados: ${clases.length}`);
             renderCursos();
             updateClasesSelect();
+        } else {
+            logVisual(`Error al cargar cursos: ${resClases.message}`, 'warn');
         }
 
         const resAlumnos = await callBackend('getAlumnos');
         if (resAlumnos.status === 'success') {
             alumnos = resAlumnos.data || [];
+            logVisual(`Alumnos cargados: ${alumnos.length}`);
             renderAlumnos();
+        } else {
+            logVisual(`Error al cargar alumnos: ${resAlumnos.message}`, 'warn');
         }
     } catch (error) {
-        console.error("Error al refrescar datos:", error);
+        logVisual(`ERROR en refreshData: ${error.message}`, 'error');
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM completamente cargado.");
+    logVisual("DOM completamente cargado.");
     const cursoForm = document.getElementById('cursoForm');
     const selectHora = document.getElementById('c_horaInicio');
     const statusMsg = document.getElementById('availability-badge');
@@ -114,14 +150,17 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let m of ['00', '30']) {
                 if (h === 21 && m === '30') continue;
                 const time = `${h.toString().padStart(2, '0')}:${m}`;
-                selectHora.innerHTML += `<option value="${time}">${time}</option>`;
+                const opt = document.createElement('option');
+                opt.value = time;
+                opt.innerText = time;
+                selectHora.appendChild(opt);
             }
         }
     };
     generateHours();
 
     window.switchTab = (tabName) => {
-        console.log(`Cambiando a pestaña: ${tabName}`);
+        logVisual(`Cambiando pestaña a: ${tabName}`);
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         
