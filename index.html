@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#0f172a">
     <title>Instituto Pro - Smart Calendar</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Google OAuth -->
+    <meta name="google-signin-client_id" content="462599480572-6cnminb9tv7se0qovc14hn2ljbufqf0h.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <script>
         document.write('<link rel="stylesheet" href="styles.css?v=' + new Date().getTime() + '">');
     </script>
@@ -17,7 +20,13 @@
                 <i class="ri-calendar-check-fill"></i>
                 <h1>INSTITUTO<span>PRO</span></h1>
             </div>
-            <div class="tab-nav">
+            <div id="auth-container" style="display: flex; align-items: center; gap: 10px;">
+                <div class="g-signin2" data-onsuccess="onSignIn"></div>
+                <button id="signout-btn" style="display:none; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: white; cursor: pointer;" onclick="signOut()">
+                    <i class="ri-logout-box-r-line"></i> Salir
+                </button>
+            </div>
+            <div class="tab-nav" id="main-nav" style="display:none;">
                 <button class="tab-btn active" onclick="switchTab('cursos')">
                     <i class="ri-time-line"></i>
                     <span>Calendario</span>
@@ -29,7 +38,7 @@
             </div>
         </header>
 
-        <div class="content-area">
+        <div class="content-area" id="app-content" style="display:none;">
             <main id="tab-cursos" class="tab-content active">
                 <section class="mobile-card-form">
                     <div class="card">
