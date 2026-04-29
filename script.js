@@ -24,7 +24,8 @@ function logVisual(msg, type = 'info') {
 if (copyLogBtn) {
     copyLogBtn.addEventListener('click', () => {
         if (debugLogElement) {
-            const logText = debugLogElement.innerText; // Obtener todo el texto visible
+            const logText = Array.from(debugLogElement.children).map(div => div.innerText).join('
+'); // Obtener todo el texto visible
             navigator.clipboard.writeText(logText).then(() => {
                 logVisual("Log copiado al portapapeles.");
                 alert("Log copiado al portapapeles!"); // Feedback adicional para Android
@@ -38,9 +39,48 @@ if (copyLogBtn) {
 
 logVisual("Script.js cargado correctamente.");
 
-// Exponer funciones al ámbito global para que Google Sign-In pueda verlas
+// Iniciar gapi y autenticación
+function initGoogleApi() {
+    logVisual("Iniciando gapi.client...");
+    gapi.load('client:auth2', function() {
+        logVisual("gapi.client:auth2 cargado.");
+        gapi.auth2.init({
+            client_id: '462599480572-6cnminb9tv7se0qovc14hn2ljbufqf0h.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/script.deployments https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/script.external_request openid'
+        }).then(function() {
+            logVisual("gapi.auth2.init completado.");
+            // Escuchar cambios de estado de sesión
+            gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignInStatus);
+            updateSignInStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+        }, function(error) {
+            logVisual(`ERROR en gapi.auth2.init: ${JSON.stringify(error)}`, 'error');
+        });
+    });
+}
+
+function updateSignInStatus(isSignedIn) {
+    logVisual(`Estado de sesión de Google: ${isSignedIn}`);
+    const signinBtnContainer = document.querySelector('.g-signin2');
+    const signoutBtn = document.getElementById('signout-btn');
+    const mainNav = document.getElementById('main-nav');
+    const appContent = document.getElementById('app-content');
+
+    if (isSignedIn) {
+        const googleUser = gapi.auth2.getAuthInstance().currentUser.get();
+        window.onSignIn(googleUser); // Llama a la función onSignIn existente
+    } else {
+        userToken = null;
+        if (signinBtnContainer) signinBtnContainer.style.display = 'block';
+        if (signoutBtn) signoutBtn.style.display = 'none';
+        if (mainNav) mainNav.style.display = 'none';
+        if (appContent) appContent.style.display = 'none';
+        logVisual("Interfaz de usuario restablecida para no autenticado.");
+    }
+}
+
+// Exponer funciones al ámbito global para que Google Sign-In pueda verlas (y para el DOM)
 window.onSignIn = function(googleUser) {
-    logVisual("Evento onSignIn disparado.");
+    logVisual("Evento onSignIn (global) disparado.");
     try {
         const profile = googleUser.getBasicProfile();
         logVisual(`Usuario autenticado: ${profile.getName()} (${profile.getEmail()})`);
@@ -78,7 +118,7 @@ window.onSignIn = function(googleUser) {
         logVisual("Finalizada actualización visual post-login. Iniciando carga de datos...");
         initApp();
     } catch (error) {
-        logVisual(`ERROR crítico en onSignIn: ${error.message}. Stack: ${error.stack}`, 'error');
+        logVisual(`ERROR crítico en onSignIn (global): ${error.message}. Stack: ${error.stack}`, 'error');
     }
 };
 
@@ -86,23 +126,25 @@ window.signOut = function() {
     logVisual("Cerrando sesión...");
     try {
         var auth2 = gapi.auth2.getAuthInstance();
-        auth2.signOut().then(function () {
-            logVisual('Sesión cerrada exitosamente.');
-            userToken = null;
-            
-            const signinBtn = document.querySelector('.g-signin2');
-            const signoutBtn = document.getElementById('signout-btn');
-            const mainNav = document.getElementById('main-nav');
-            const appContent = document.getElementById('app-content');
+        if (auth2) {
+            auth2.signOut().then(function () {
+                logVisual('Sesión cerrada exitosamente.');
+                userToken = null;
+                
+                const signinBtn = document.querySelector('.g-signin2');
+                const signoutBtn = document.getElementById('signout-btn');
+                const mainNav = document.getElementById('main-nav');
+                const appContent = document.getElementById('app-content');
 
-            if (signinBtn) signinBtn.style.display = 'block';
-            if (signoutBtn) signoutBtn.style.display = 'none';
-            if (mainNav) mainNav.style.display = 'none';
-            if (appContent) appContent.style.display = 'none';
-            logVisual("Interfaz de usuario actualizada post-logout.");
-        });
+                if (signinBtn) signinBtn.style.display = 'block';
+                if (signoutBtn) signoutBtn.style.display = 'none';
+                if (mainNav) mainNav.style.display = 'none';
+                if (appContent) appContent.style.display = 'none';
+                logVisual("Interfaz de usuario actualizada post-logout.");
+            });
+        } else { logVisual("WARN: gapi.auth2.getAuthInstance() no disponible para signOut.", 'warn'); }
     } catch (error) {
-        logVisual(`ERROR en signOut: ${error.message}`, 'error');
+        logVisual(`ERROR en signOut: ${error.message}. Stack: ${error.stack}`, 'error');
     }
 };
 
@@ -118,6 +160,7 @@ async function callBackend(action, method = 'GET', data = null) {
 
     if (method === 'POST' && data) {
         options.body = JSON.stringify(data);
+        logVisual(`Body POST: ${options.body.substring(0, 200)}...`);
     }
 
     try {
@@ -177,7 +220,9 @@ async function refreshData() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    logVisual("DOM completamente cargado.");
+    logVisual("DOM completamente cargado. Iniciando API de Google...");
+    initGoogleApi(); // <--- Inicia la API de Google aquí
+
     const cursoForm = document.getElementById('cursoForm');
     const selectHora = document.getElementById('c_horaInicio');
     const statusMsg = document.getElementById('availability-badge');
