@@ -173,7 +173,8 @@
         document.write('<script src="script.js?v=' + new Date().getTime() + '"><\/script>');
     </script>
     <!-- Visual Debug Console for Mobile -->
-    <div id="debug-log" style="position: fixed; bottom: 0; left: 0; width: 100%; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.8); color: #00ff00; font-family: monospace; font-size: 10px; padding: 10px; z-index: 9999; display: block; pointer-events: none; border-top: 1px solid #333;">
+    <div id="debug-log" style="position: fixed; bottom: 0; left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.9); color: #00ff00; font-family: monospace; font-size: 10px; padding: 10px; z-index: 9999; display: block; border-top: 1px solid #333;">
+        <button id="copy-log-btn" style="position: sticky; top: 0; right: 0; float: right; background: #6366f1; color: white; border: none; padding: 5px 8px; font-size: 10px; cursor: pointer; z-index: 10000;">Copiar Log</button>
         <div>[System] Debug console initialized.</div>
     </div>
 </body>

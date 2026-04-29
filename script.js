@@ -3,19 +3,37 @@ let userToken = null;
 let clases = [];
 let alumnos = [];
 
+// Referencia a la consola de depuración visual
+const debugLogElement = document.getElementById('debug-log');
+const copyLogBtn = document.getElementById('copy-log-btn');
+
 // Función para loguear visualmente en pantalla (para Android)
 function logVisual(msg, type = 'info') {
-    const debugLog = document.getElementById('debug-log');
-    if (debugLog) {
+    if (debugLogElement) {
         const entry = document.createElement('div');
         entry.style.borderBottom = '1px solid #222';
         entry.style.padding = '2px 0';
         entry.style.color = type === 'error' ? '#ff0000' : (type === 'warn' ? '#ffff00' : '#00ff00');
         entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        debugLog.appendChild(entry);
-        debugLog.scrollTop = debugLog.scrollHeight;
+        debugLogElement.appendChild(entry);
+        debugLogElement.scrollTop = debugLogElement.scrollHeight; // Auto-scroll
     }
-    console.log(msg);
+    console.log(msg); // Mantener console.log para entorno de desarrollo
+}
+
+if (copyLogBtn) {
+    copyLogBtn.addEventListener('click', () => {
+        if (debugLogElement) {
+            const logText = debugLogElement.innerText; // Obtener todo el texto visible
+            navigator.clipboard.writeText(logText).then(() => {
+                logVisual("Log copiado al portapapeles.");
+                alert("Log copiado al portapapeles!"); // Feedback adicional para Android
+            }).catch(err => {
+                logVisual(`Error al copiar log: ${err}`, 'error');
+                alert(`Error al copiar log: ${err}`);
+            });
+        }
+    });
 }
 
 logVisual("Script.js cargado correctamente.");
@@ -30,8 +48,8 @@ window.onSignIn = function(googleUser) {
         userToken = googleUser.getAuthResponse().id_token;
         logVisual("ID Token obtenido con éxito.");
 
-        // UI Updates - FORZAR CAMBIOS
-        logVisual("Actualizando UI...");
+        // UI Updates - FORZAR CAMBIOS CON VERIFICACIONES
+        logVisual("Iniciando actualización de la interfaz de usuario...");
         const signinBtn = document.querySelector('.g-signin2');
         const signoutBtn = document.getElementById('signout-btn');
         const mainNav = document.getElementById('main-nav');
@@ -39,25 +57,28 @@ window.onSignIn = function(googleUser) {
 
         if (signinBtn) {
             signinBtn.style.display = 'none';
-            logVisual("Botón Sign-In ocultado.");
-        }
+            logVisual(`Estado del botón Sign-In: ${signinBtn.style.display}`);
+        } else { logVisual("WARN: Botón Sign-In ('.g-signin2') no encontrado.", 'warn'); }
+
         if (signoutBtn) {
             signoutBtn.style.display = 'block';
-            logVisual("Botón Sign-Out mostrado.");
-        }
+            logVisual(`Estado del botón Sign-Out: ${signoutBtn.style.display}`);
+        } else { logVisual("WARN: Botón Sign-Out ('#signout-btn') no encontrado.", 'warn'); }
+
         if (mainNav) {
             mainNav.style.display = 'flex';
-            logVisual("Navegación principal mostrada.");
-        }
+            logVisual(`Estado de Navegación Principal: ${mainNav.style.display}`);
+        } else { logVisual("WARN: Navegación principal ('#main-nav') no encontrada.", 'warn'); }
+
         if (appContent) {
             appContent.style.display = 'flex';
-            logVisual("Contenido de la aplicación desbloqueado.");
-        }
+            logVisual(`Estado del Contenido de la Aplicación: ${appContent.style.display}`);
+        } else { logVisual("WARN: Contenido de la aplicación ('#app-content') no encontrado.", 'warn'); }
 
+        logVisual("Finalizada actualización visual post-login. Iniciando carga de datos...");
         initApp();
     } catch (error) {
-        logVisual(`ERROR en onSignIn: ${error.message}`, 'error');
-        console.error(error);
+        logVisual(`ERROR crítico en onSignIn: ${error.message}. Stack: ${error.stack}`, 'error');
     }
 };
 
@@ -69,10 +90,16 @@ window.signOut = function() {
             logVisual('Sesión cerrada exitosamente.');
             userToken = null;
             
-            document.querySelector('.g-signin2').style.display = 'block';
-            document.getElementById('signout-btn').style.display = 'none';
-            document.getElementById('main-nav').style.display = 'none';
-            document.getElementById('app-content').style.display = 'none';
+            const signinBtn = document.querySelector('.g-signin2');
+            const signoutBtn = document.getElementById('signout-btn');
+            const mainNav = document.getElementById('main-nav');
+            const appContent = document.getElementById('app-content');
+
+            if (signinBtn) signinBtn.style.display = 'block';
+            if (signoutBtn) signoutBtn.style.display = 'none';
+            if (mainNav) mainNav.style.display = 'none';
+            if (appContent) appContent.style.display = 'none';
+            logVisual("Interfaz de usuario actualizada post-logout.");
         });
     } catch (error) {
         logVisual(`ERROR en signOut: ${error.message}`, 'error');
@@ -80,7 +107,7 @@ window.signOut = function() {
 };
 
 async function callBackend(action, method = 'GET', data = null) {
-    logVisual(`Llamada API: ${action} [${method}]`);
+    logVisual(`Llamada API: ${action} [${method}]. Data: ${JSON.stringify(data)}`);
     const url = new URL(APPS_SCRIPT_URL);
     url.searchParams.append('action', action);
     
@@ -95,44 +122,57 @@ async function callBackend(action, method = 'GET', data = null) {
 
     try {
         const response = await fetch(url, options);
-        logVisual(`HTTP Status: ${response.status}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
-        logVisual(`Respuesta API (${action}): ${result.status}`);
+        logVisual(`HTTP Status para ${action}: ${response.status} (${response.statusText})`);
+        const responseText = await response.text(); // Leer texto para posible error JSON
+        logVisual(`Raw response text for ${action}: ${responseText.substring(0, 200)}...`); // Log primeros 200 chars
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}. Response: ${responseText}`);
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            throw new Error(`JSON parse error for ${action}: ${jsonError.message}. Raw: ${responseText}`);
+        }
+        
+        logVisual(`Respuesta API (${action}): Status: ${result.status}, Message: ${result.message || 'N/A'}`);
         return result;
     } catch (error) {
-        logVisual(`ERROR en callBackend (${action}): ${error.message}`, 'error');
+        logVisual(`ERROR en callBackend (${action}): ${error.message}. Stack: ${error.stack}`, 'error');
         return { status: 'error', message: error.toString() };
     }
 }
 
 async function initApp() {
-    logVisual("Iniciando carga de datos remotos...");
+    logVisual("Iniciando carga de datos remotos de la aplicación...");
     await refreshData();
 }
 
 async function refreshData() {
+    logVisual("Refrescando datos de Cursos y Alumnos...");
     try {
         const resClases = await callBackend('getClases');
         if (resClases.status === 'success') {
             clases = resClases.data || [];
-            logVisual(`Cursos cargados: ${clases.length}`);
+            logVisual(`Cursos cargados: ${clases.length}. Datos: ${JSON.stringify(clases.slice(0,1))}` );
             renderCursos();
             updateClasesSelect();
         } else {
-            logVisual(`Error al cargar cursos: ${resClases.message}`, 'warn');
+            logVisual(`Error al cargar cursos: ${resClases.message}. Raw: ${JSON.stringify(resClases)}`, 'warn');
         }
 
         const resAlumnos = await callBackend('getAlumnos');
         if (resAlumnos.status === 'success') {
             alumnos = resAlumnos.data || [];
-            logVisual(`Alumnos cargados: ${alumnos.length}`);
+            logVisual(`Alumnos cargados: ${alumnos.length}. Datos: ${JSON.stringify(alumnos.slice(0,1))}`);
             renderAlumnos();
         } else {
-            logVisual(`Error al cargar alumnos: ${resAlumnos.message}`, 'warn');
+            logVisual(`Error al cargar alumnos: ${resAlumnos.message}. Raw: ${JSON.stringify(resAlumnos)}`, 'warn');
         }
     } catch (error) {
-        logVisual(`ERROR en refreshData: ${error.message}`, 'error');
+        logVisual(`ERROR crítico en refreshData: ${error.message}. Stack: ${error.stack}`, 'error');
     }
 }
 
@@ -144,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GENERAR SELECTOR DE HORAS ---
     const generateHours = () => {
-        if (!selectHora) return;
+        if (!selectHora) { logVisual("WARN: selectHora no encontrado.", 'warn'); return; }
         selectHora.innerHTML = '<option value="">-- Selecciona Hora --</option>';
         for (let h = 8; h <= 21; h++) {
             for (let m of ['00', '30']) {
@@ -156,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectHora.appendChild(opt);
             }
         }
+        logVisual("Selector de horas generado.");
     };
     generateHours();
 
@@ -166,23 +207,27 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const targetTab = document.getElementById(`tab-${tabName}`);
         if (targetTab) targetTab.classList.add('active');
+        else logVisual(`WARN: Pestaña target '#tab-${tabName}' no encontrada.`, 'warn');
 
         const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => {
             const attr = btn.getAttribute('onclick');
             return attr && attr.includes(tabName);
         });
         if (activeBtn) activeBtn.classList.add('active');
+        else logVisual(`WARN: Botón de pestaña para '${tabName}' no encontrado.`, 'warn');
         
         if (tabName === 'alumnos') updateClasesSelect();
     };
 
     // --- LOGICA DE CRUCE Y DISPONIBILIDAD ---
     const checkCruces = () => {
-        if (!selectHora || !statusMsg) return true;
+        if (!selectHora || !statusMsg) { logVisual("WARN: Elementos selectHora o statusMsg no encontrados en checkCruces.", 'warn'); return true; }
         const hInicio = selectHora.value;
         const duracion = parseFloat(document.getElementById('c_duracion').value);
         const dias = Array.from(document.querySelectorAll('.c_dias:checked')).map(cb => cb.value);
         const modalidad = document.getElementById('c_modalidad').value;
+
+        logVisual(`Verificando cruces: Inicio=${hInicio}, Duracion=${duracion}, Dias=${dias.join(',')}, Modalidad=${modalidad}`);
 
         if (!hInicio || dias.length === 0 || modalidad === 'Virtual') {
             statusMsg.innerText = "Selecciona horario para verificar...";
@@ -208,12 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     (totalMinInicio <= cMinI && totalMinFin >= cMinF)) {
                     statusMsg.innerText = `❌ OCUPADO por ${clase.nombre}`;
                     statusMsg.className = "status-msg error";
+                    logVisual(`Cruce detectado con ${clase.nombre}.`, 'warn');
                     return false;
                 }
             }
         }
         statusMsg.innerText = `✅ DISPONIBLE (Termina ${Math.floor(totalMinFin/60)}:${(totalMinFin%60).toString().padStart(2,'0')})`;
         statusMsg.className = "status-msg success";
+        logVisual("Horario disponible.");
         return true;
     };
 
@@ -227,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cursoForm) {
         cursoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            logVisual("Formulario de curso enviado.");
             if (!checkCruces()) return alert('El local está ocupado en ese horario.');
 
             const hInicio = selectHora.value;
@@ -245,13 +293,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 horaFin: horaFin,
                 duracion: duracion
             };
+            logVisual(`Datos de nueva clase: ${JSON.stringify(nuevaClase)}`);
 
             const res = await callBackend('addClase', 'POST', nuevaClase);
             if (res.status === 'success') {
+                logVisual("Clase guardada con éxito, refrescando datos...");
                 await refreshData();
                 cursoForm.reset();
                 checkCruces();
             } else {
+                logVisual(`ERROR: Falló al guardar clase: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
                 alert('Error al guardar el curso: ' + res.message);
             }
         });
@@ -259,12 +310,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.renderCursos = () => {
         const container = document.getElementById('cursosContainer');
-        if (!container) return;
+        if (!container) { logVisual("WARN: Contenedor de cursos no encontrado.", 'warn'); return; }
         container.innerHTML = '';
         if (clases.length === 0) {
             container.innerHTML = '<p class="empty-msg">No hay cursos programados.</p>';
+            logVisual("No hay cursos programados para renderizar.");
             return;
         }
+        logVisual(`Renderizando ${clases.length} cursos.`);
 
         const profes = {};
         clases.forEach(c => {
@@ -290,14 +343,18 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = html;
             container.appendChild(card);
         }
+        logVisual("Cursos renderizados exitosamente.");
     };
 
     window.deleteClase = async (id) => {
+        logVisual(`Intentando eliminar clase con ID: ${id}`);
         if(confirm('¿Eliminar curso?')){
             const res = await callBackend('deleteClase', 'POST', { id: id });
             if (res.status === 'success') {
+                logVisual("Clase eliminada con éxito, refrescando datos...");
                 await refreshData();
             } else {
+                logVisual(`ERROR: Falló al eliminar clase: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
                 alert('Error al eliminar: ' + res.message);
             }
         }
@@ -305,17 +362,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.updateClasesSelect = () => {
         const s = document.getElementById('a_claseId');
-        if (!s) return;
+        if (!s) { logVisual("WARN: Select de clases de alumno no encontrado.", 'warn'); return; }
         s.innerHTML = '<option value="">-- Elige Curso --</option>';
+        if (clases.length === 0) { logVisual("No hay clases para el selector de alumnos."); return; }
         clases.forEach(c => {
             s.innerHTML += `<option value="${c.id}">${c.nombre} (${c.horainicio} con ${c.profesor})</option>`;
         });
+        logVisual(`Selector de clases de alumno actualizado con ${clases.length} opciones.`);
     };
 
     const alumnoForm = document.getElementById('alumnoForm');
     if (alumnoForm) {
         alumnoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            logVisual("Formulario de alumno enviado.");
             const nuevoAlumno = {
                 id: 'A-' + Date.now(),
                 nombre: document.getElementById('a_nombre').value,
@@ -324,12 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 claseId: document.getElementById('a_claseId').value,
                 asistencias: 0
             };
+            logVisual(`Datos de nuevo alumno: ${JSON.stringify(nuevoAlumno)}`);
 
             const res = await callBackend('addAlumno', 'POST', nuevoAlumno);
             if (res.status === 'success') {
+                logVisual("Alumno inscrito con éxito, refrescando datos...");
                 await refreshData();
                 e.target.reset();
             } else {
+                logVisual(`ERROR: Falló al inscribir alumno: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
                 alert('Error al inscribir: ' + res.message);
             }
         });
@@ -337,10 +400,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.renderAlumnos = (filtro = 'todos') => {
         const table = document.getElementById('alumnosTable');
-        if (!table) return;
+        if (!table) { logVisual("WARN: Tabla de alumnos no encontrada.", 'warn'); return; }
         table.innerHTML = '';
         let list = filtro === 'deudores' ? alumnos.filter(a => a.cuotaestado === 'debe') : alumnos;
+        logVisual(`Renderizando ${list.length} alumnos (Filtro: ${filtro}).`);
         
+        if (list.length === 0) {
+            // Podrías añadir un mensaje de "no hay alumnos" en la tabla
+            logVisual("No hay alumnos para renderizar.");
+        }
+
         list.forEach(a => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -356,22 +425,42 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             table.appendChild(tr);
         });
+        logVisual("Alumnos renderizados exitosamente.");
     };
 
     window.addAsis = async (id) => { 
+        logVisual(`Añadiendo asistencia a alumno con ID: ${id}`);
         const res = await callBackend('addAsistencia', 'POST', { id: id });
-        if (res.status === 'success') await refreshData();
+        if (res.status === 'success') {
+            logVisual("Asistencia añadida con éxito, refrescando datos...");
+            await refreshData();
+        } else {
+            logVisual(`ERROR: Falló al añadir asistencia: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
+        }
     };
 
     window.toggleCuota = async (id) => { 
+        logVisual(`Cambiando estado de cuota para alumno con ID: ${id}`);
         const res = await callBackend('toggleCuota', 'POST', { id: id });
-        if (res.status === 'success') await refreshData();
+        if (res.status === 'success') {
+            logVisual("Estado de cuota cambiado con éxito, refrescando datos...");
+            await refreshData();
+        } else {
+            logVisual(`ERROR: Falló al cambiar cuota: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
+        }
     };
 
     window.delAlu = async (id) => { 
-        if(confirm('¿Borrar?')){
+        logVisual(`Intentando eliminar alumno con ID: ${id}`);
+        if(confirm('¿Borrar alumno?')){
             const res = await callBackend('deleteAlumno', 'POST', { id: id });
-            if (res.status === 'success') await refreshData();
+            if (res.status === 'success') {
+                logVisual("Alumno eliminado con éxito, refrescando datos...");
+                await refreshData();
+            } else {
+                logVisual(`ERROR: Falló al eliminar alumno: ${res.message}. Raw: ${JSON.stringify(res)}`, 'error');
+                alert('Error al eliminar alumno: ' + res.message);
+            }
         }
     };
 });
